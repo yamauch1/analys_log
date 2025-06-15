@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <title>ログ抽出アプリ</title>
+    <style>
+      body {
+        font-family: sans-serif;
+        margin: 2em;
+      }
+      #dropzone {
+        width: 100%;
+        height: 100px;
+        border: 2px dashed #ccc;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 1em;
+      }
+      .log-entry {
+        margin-bottom: 1.5em;
+        white-space: pre-wrap;
+      }
+      .arg-list {
+        margin-left: 1em;
+        font-size: 0.9em;
+        color: #555;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>ログファイル抽出アプリ</h1>
+
+    <div id="dropzone">ここにログファイルをドロップ</div>
+    <input type="file" id="fileInput" />
+    <div id="output"></div>
+
+    <script src="methods.js"></script>
+    <script>
+      // ✅ 表示切替フラグ
+      const SHOW_ARGUMENT_VARIANTS = true;
+
+      const dropzone = document.getElementById("dropzone");
+      const fileInput = document.getElementById("fileInput");
+      const output = document.getElementById("output");
+
+      dropzone.addEventListener("dragover", (e) => {
+        e.preventDefault();
+        dropzone.style.borderColor = "#000";
+      });
+
+      dropzone.addEventListener("dragleave", () => {
+        dropzone.style.borderColor = "#ccc";
+      });
+
+      dropzone.addEventListener("drop", (e) => {
+        e.preventDefault();
+        dropzone.style.borderColor = "#ccc";
+        const file = e.dataTransfer.files[0];
+        handleFile(file);
+      });
+
+      fileInput.addEventListener("change", (e) => {
+        const file = e.target.files[0];
+        handleFile(file);
+      });
+
+      function handleFile(file) {
+        const reader = new FileReader();
+        reader.onload = () => processLog(reader.result);
+        reader.readAsText(file);
+      }
+
+      function processLog(logText) {
+        const regex = /execute\s[^\n\r=]+[^\n\r]*/gi;
+        const matches = logText.match(regex) || [];
+
+        const countMap = {};
+
+        matches.forEach((line) => {
+          const methodMatch = line.match(/execute\s([^\s@=]+)/i);
+          if (!methodMatch) return;
+          const method = methodMatch[1];
+          const argsMatch = line.match(/(@[^=\s]+ *= *[^,\s]+)/g); // 複数引数抽出
+          const argsString = argsMatch ? argsMatch.join(", ") : "";
+
+          if (!countMap[method]) {
+            countMap[method] = { lines: [], count: 0, argsSet: new Set() };
+          }
+          countMap[method].lines.push(line);
+          countMap[method].count += 1;
+          if (argsString) countMap[method].argsSet.add(argsString);
+        });
+
+        output.innerHTML = "";
+
+        Object.entries(countMap).forEach(([method, data]) => {
+          const entry = jsonData.find((j) => j.stored_name === method);
+          const description = entry ? entry.description : "（説明なし）";
+          const color = entry ? entry.output_color : "#000000";
+
+          const firstLine = data.lines[0];
+          const argVariants = Array.from(data.argsSet);
+
+          const div = document.createElement("div");
+          div.className = "log-entry";
+          div.innerHTML = `
+          <span style="color: ${color}; font-weight: bold;">${firstLine}</span><br>
+          解説: ${description}<br>
+          登場回数: ${data.count}
+          ${
+            SHOW_ARGUMENT_VARIANTS && argVariants.length > 1
+              ? `<br>他の引数:<div class="arg-list">${argVariants
+                  .map((a) => a)
+                  .join("<br>")}</div>`
+              : ""
+          }
+        `;
+          output.appendChild(div);
+        });
+      }
+    </script>
+  </body>
+</html>

@@ -1,0 +1,13 @@
+execute = stored_method1 @hogeaaa
+<a>hugaaa</a>
+execute stored_method1 @arg=1
+execute stored_method2 @arg1 = 1, @arg2 = 'example'
+execute stored_method2 @arg1 = 1, @arg2 = 'aaaa'
+execute stored_method2 @arg1 = 1, @arg2 = 'examplae'
+execute stored_method2 @arg1 = 4, @arg2 = 'example'
+execute stored_method2 @arg =3
+execute stored_method2 @arg=4
+execute stored_method3 @arg=2
+
+execute = stored_method3 @arg=2
+@arg1 = 1, @arg2 = 'example'
